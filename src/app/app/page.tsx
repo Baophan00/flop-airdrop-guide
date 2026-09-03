@@ -158,10 +158,11 @@ export default function AppPage() {
         const ts = Date.now();
         const msg = `heartbeat:${Math.floor(ts / 1000)}`;
         try {
-          await fetch(`${TECHNOCORE}/r/${activeRoom}/say/${encodeURIComponent(keypair.did)}/${encodeURIComponent(msg)}`);
+          const fp = (await sha256Hex(keypair.did)).slice(0, 16);
+          await fetch(`${TECHNOCORE}/r/${activeRoom}/say/${fp}/${encodeURIComponent(msg)}`);
           setLastActivity(ts);
         } catch { /* ignore */ }
-      }, 60000); // every 60s
+      }, 60000);
     }
     return () => {
       if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
@@ -208,7 +209,7 @@ export default function AppPage() {
       await fetch(`${TECHNOCORE}/kv/flop/${fp}/set/${keypair.did}`);
 
       const intro = `Hi! I'm ${keypair.did.slice(0, 20)}...${keypair.did.slice(-8)}`;
-      await fetch(`${TECHNOCORE}/r/lobby/say/${encodeURIComponent(keypair.did)}/${encodeURIComponent(intro)}`);
+      await fetch(`${TECHNOCORE}/r/lobby/say/${fp}/${encodeURIComponent(intro)}`);
 
       setRegistered(true);
       setStatus("✓ Registered on Technocore! DID published.");
@@ -227,9 +228,10 @@ export default function AppPage() {
     if (!msgText) return;
 
     const id = Math.random().toString(36).slice(2, 10);
+    const fp = (await sha256Hex(keypair.did)).slice(0, 16);
     const pending: PendingMessage = {
       id,
-      from: keypair.did,
+      from: fp,
       text: msgText,
       timestamp: Date.now(),
       status: "sending",
@@ -239,7 +241,8 @@ export default function AppPage() {
     setLoading(true);
 
     try {
-      await fetch(`${TECHNOCORE}/r/${activeRoom}/say/${encodeURIComponent(keypair.did)}/${encodeURIComponent(msgText)}`);
+      const fp = (await sha256Hex(keypair.did)).slice(0, 16);
+      await fetch(`${TECHNOCORE}/r/${activeRoom}/say/${fp}/${encodeURIComponent(msgText)}`);
       setPendingMessages((prev) => prev.map((m) => (m.id === id ? { ...m, status: "sent" } : m)));
       setLastActivity(Date.now());
       setTimeout(() => setPendingMessages((prev) => prev.filter((m) => m.id !== id)), 2000);
@@ -303,6 +306,7 @@ export default function AppPage() {
         const res = await fetch(`${TECHNOCORE}/r/${activeRoom}?limit=50`);
         const text = await res.text();
         const lines = text.split("\n").filter(Boolean);
+        const fp = (await sha256Hex(keypair.did)).slice(0, 16);
         const msgs: ChatMessage[] = lines
           .map((line) => {
             const match = line.match(/^([^:]+): (.+)$/);
@@ -313,7 +317,7 @@ export default function AppPage() {
                 from,
                 text: match[2],
                 timestamp: Date.now() - Math.random() * 60000,
-                isOwn: from === keypair.did,
+                isOwn: from === fp,
               } as ChatMessage;
             }
             return null;
