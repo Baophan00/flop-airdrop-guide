@@ -205,7 +205,7 @@ export default function AppPage() {
     setStatus("Registering DID on Technocore...");
     try {
       const fp = (await sha256Hex(keypair.did)).slice(0, 16);
-      await fetch(`${TECHNOCORE}/kv/did/${fp}/${encodeURIComponent(keypair.did)}`);
+      await fetch(`${TECHNOCORE}/kv/flop/${fp}/set/${encodeURIComponent(keypair.did)}`);
 
       const intro = `Hi! I'm ${keypair.did.slice(0, 20)}...${keypair.did.slice(-8)}`;
       await fetch(`${TECHNOCORE}/r/lobby/say/${encodeURIComponent(keypair.did)}/${encodeURIComponent(intro)}`);
